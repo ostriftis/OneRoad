@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Debts</title>
+
+    <link rel="stylesheet" href="/css/styles.css">
+    <link rel="icon" type="image/png" href="/logo.png">
+</head>
+<body>  
+    <!-- Main container -->
+    <div class="wrapper">
+        <!-- Top bar -->
+        <div id="banner-container"></div>
+
+        <!-- Content -->
+        <div class="data-page-container">
+            <h2 class="section-header">Debts</h2>
+            
+            <form action="/api/debts" method="POST">
+                <input type="hidden" id="formatInput" name="format" value="">
+                <!-- Toll operator -->
+                <div class="toll-id-container">
+                    <label for="toll-id">Toll Operator ID:</label>
+                    <input type="text" id="toll-id" name="tollOpID" required>
+                </div>
+
+                <!-- Time Period Section -->
+                <div class="time-period-container">
+                    <label for="start-time">Starting Time period:</label>
+                    <input type="date" id="start-time" name="start" required>
+            
+                    <label for="end-time">Ending Time period:</label>
+                    <input type="date" id="end-time" name="end" required>
+                </div>
+        
+                <!-- Action Buttons -->
+                <div class="button-container">
+                    <button type="submit" class="raw-data-button" onclick="setFormat('json')">Get JSON Data</button>
+                    <button type="submit" class="diagram-data-button" onclick="setFormat('csv')">Get CSV Data</button>
+                </div>
+            </form>
+        </div>
+        <script>
+            const username = new URLSearchParams(window.location.search).get("username");
+            function setFormat(format) {
+                document.getElementById('formatInput').value = format;
+            }
+
+            function appendUsername(url) {
+                return `${url}?username=${encodeURIComponent(username)}`;
+                   // Set navigation links dynamically
+            }
+            /*document.getElementById("home-link").href = appendUsername("/api/dashboard");
+            document.getElementById("debts-link").href = appendUsername("/api/debts");
+            document.getElementById("stats-link").href = appendUsername("/api/stats");*/
+            // Dynamically load the banner.html file
+        fetch('/banner.html')
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Failed to load banner.html');
+                }
+                return response.text();
+            })
+            .then(html => {
+                // Inject the banner HTML into the container
+                document.getElementById('banner-container').innerHTML = html;
+
+                
+                // Update banner links dynamically
+                document.getElementById('logo-link').href = appendUsername('/api/dashboard');
+                document.getElementById('home-link').href = appendUsername('/api/dashboard');
+                document.getElementById('debts-link').href = appendUsername('/api/debts');
+                document.getElementById('stats-link').href = appendUsername('/api/stats');
+
+                // Add logout functionality
+                document.getElementById('logout').addEventListener('click', () => {
+                    fetch('/api/logout', { method: 'POST' })
+                        .then(response => {
+                            if (response.ok) {
+                                // Redirect to the login page or home page after logout
+                                window.location.href = '/api/login';
+                            } else {
+                                alert('Logout failed! Please try again.');
+                            }
+                        })
+                        .catch(error => {
+                            console.error("Error during logout:", error);
+                            alert('Something went wrong. Try again.');
+                        });
+                });
+            })
+            .catch(error => console.error('Error loading banner:', error));
+        </script>
+        <script>
+            // Get today's date in YYYY-MM-DD format
+            const today = new Date().toISOString().split('T')[0];
+
+            // Set the 'max' attribute for both date inputs
+            document.getElementById('start-time').setAttribute('max', today);
+            document.getElementById('end-time').setAttribute('max', today);
+            
+        </script>
+</body>
+</html>

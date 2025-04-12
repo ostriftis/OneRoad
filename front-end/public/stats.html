@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Statistics</title>
+    <link rel="stylesheet" href="/css/styles.css">
+    <link rel="icon" type="image/png" href="/logo.png" />
+</head>
+<body>
+    <!-- Main container -->
+    <div class="wrapper">
+        <!-- Banner (dynamically fetched) -->
+        <div id="banner-container"></div> <!-- Placeholder for banner -->
+
+        <!-- Content -->
+        <div class="data-page-container">
+            <div class="section-header">View Stats</div>
+            
+            <div class="buttons-section">
+              <div class="button" onclick="location.href=appendUsername('/api/tollStationPasses')">Toll Station Passes</div>
+              <div class="button" onclick="location.href=appendUsername('/api/passAnalysis')">Pass Analysis</div>
+              <div class="button" onclick="location.href=appendUsername('/api/passesCost')">Passes Cost</div>
+              <div class="button" onclick="location.href=appendUsername('/api/chargesBy')">Charges By Operator</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Script -->
+    <script>
+            // Extract 'username' from the query parameters
+            const params = new URLSearchParams(window.location.search);
+            const username = params.get('username') || 'Guest';
+            
+            function appendUsername(url) {
+                return `${url}?username=${encodeURIComponent(username)}`;
+            }
+        // Dynamically load the banner.html file
+        fetch('/banner.html')
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Failed to load banner.html');
+                }
+                return response.text();
+            })
+            .then(html => {
+                // Inject the banner HTML into the container
+                document.getElementById('banner-container').innerHTML = html;
+
+
+                // Update banner links dynamically
+                document.getElementById('logo-link').href = appendUsername('/api/dashboard');
+                document.getElementById('home-link').href = appendUsername('/api/dashboard');
+                document.getElementById('debts-link').href = appendUsername('/api/debts');
+                document.getElementById('stats-link').href = appendUsername('/api/stats');
+
+                // Add logout functionality
+                document.getElementById('logout').addEventListener('click', () => {
+                    fetch('/api/logout', { method: 'POST' })
+                        .then(response => {
+                            if (response.ok) {
+                                // Redirect to the login page or home page after logout
+                                window.location.href = '/api/login';
+                            } else {
+                                alert('Logout failed! Please try again.');
+                            }
+                        })
+                        .catch(error => {
+                            console.error("Error during logout:", error);
+                            alert('Something went wrong. Try again.');
+                        });
+                });
+            })
+            .catch(error => console.error('Error loading banner:', error));
+    </script>
+</body>
+</html>

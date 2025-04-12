@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Login Page</title>
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/styles.css">
+  <link rel="icon" type="image/png" href="/logo.png" />
+</head>
+<body>
+  <div class="login-container">
+    <div class="login-card">
+      <form id="login-form">
+        <div class="input-container" width="200%">
+          <label for="username">Username</label>
+          <input type="text" id="username" name="username" required placeholder="Enter your username">
+        </div>
+      
+        <div class="input-container">
+          <label for="password">Password</label>
+          <input type="password" id="password" name="password" required placeholder="Enter your password">
+        </div>
+      
+        <div class="button-container">
+          <button type="submit" class="login-button">Login</button>
+        </div>
+      </form>
+      <div id="error-message" style="color: red; display: none;"></div>
+      
+    </div>
+  </div>
+
+  <script>
+    document.getElementById("login-form").addEventListener("submit", async (event) => {
+  event.preventDefault(); // Prevent the default form submission
+
+  const form = event.target;
+  const formData = new URLSearchParams(new FormData(form)); // Serialize form data
+
+  try {
+    const response = await fetch("/api/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: formData,
+    });
+
+    const result = await response.json();
+
+    if (response.ok) {
+      // Save the token (e.g., in localStorage or as a cookie)
+      document.cookie = `auth_token=${result.token}; path=/; HttpOnly`;
+
+      // Redirect to the specified URL
+      window.location.href = result.redirect;
+    } else {
+      // Display error message
+      const errorMessage = document.getElementById("error-message");
+      errorMessage.textContent = result.error;
+      errorMessage.style.display = "block";
+    }
+  } catch (error) {
+    console.error("Error during login:", error);
+  }
+});
+
+  </script>
+</body>
+</html>

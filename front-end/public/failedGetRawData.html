@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Toll Station Passes</title>
+    <link rel="stylesheet" href="/css/styles.css">
+    <link rel="icon" type="image/png" href="/logo.png" />
+</head>
+<body>
+    <!-- Main container -->
+    <div class="wrapper">
+        <!-- Top bar -->
+        <div class="top-bar">
+            <a href="/api/dashboard" id="logo-link">
+                <img src="/logo.png" alt="Logo" class="logo">
+            </a>
+            <nav class="nav-links">
+                <a href="/api/dashboard" class="nav-link">Home</a>
+                <a href="/api/debts" class="nav-link">Debts</a>
+                <a href="/api/stats" class="nav-link">Statistics</a>
+            </nav>
+            <button class="logout-button" id="logout">Logout</button>
+        </div>
+
+        <!-- Content -->
+        <div class="error-container">
+            <p class="error-message">Invalid Dates. Please try again.</p>
+            <button class="back-button" onclick="goBack()">Go Back</button>
+        </div>
+    </div>
+
+    <script>
+        function goBack() {
+            window.history.back();
+        }
+    </script>
+</body>
+</html>

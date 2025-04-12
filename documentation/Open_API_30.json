@@ -1,0 +1,379 @@
+{
+    "openapi": "3.0.0",
+    "info": {
+      "title": "Toll System API",
+      "version": "1.0.0",
+      "description": "API για διαχείριση και ανάλυση διελεύσεων σταθμών διοδίων."
+    },
+    "paths": {
+      "/admin/healthCheck": {
+        "get": {
+          "summary": "Ελέγχει τη σύνδεση με τη βάση δεδομένων",
+          "responses": {
+            "200": {
+              "description": "Επιτυχής σύνδεση",
+              "content": {
+                "application/json": {
+                  "example": {
+                    "status": "OK",
+                    "dbconnection": "mysql://devOps:mathima@localhost/devOps",
+                    "n_stations": 5,
+                    "n_tags": 100,
+                    "n_passes": 5000
+                  }
+                }
+              }
+            },
+            "401": {
+              "description": "Αποτυχία σύνδεσης",
+              "content": {
+                "application/json": {
+                  "example": {
+                    "status": "failed",
+                    "dbconnection": "mysql://devOps:mathima@localhost/devOps"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "/admin/resetStations": {
+        "post": {
+          "summary": "Επαναφορά των σταθμών διοδίων από CSV αρχείο",
+          "responses": {
+            "200": {
+              "description": "Επιτυχής επαναφορά",
+              "content": {
+                "application/json": {
+                  "example": {
+                    "status": "OK"
+                  }
+                }
+              }
+            },
+            "400": {
+              "description": "Αποτυχία επαναφοράς",
+              "content": {
+                "application/json": {
+                  "example": {
+                    "status": "failed",
+                    "info": "No connection"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "/admin/resetPasses": {
+        "post": {
+          "summary": "Επαναφορά γεγονότων διέλευσης",
+          "responses": {
+            "200": {
+              "description": "Επιτυχής επαναφορά",
+              "content": {
+                "application/json": {
+                  "example": {
+                    "status": "OK"
+                  }
+                }
+              }
+            },
+            "400": {
+              "description": "Αποτυχία επαναφοράς",
+              "content": {
+                "application/json": {
+                  "example": {
+                    "status": "failed",
+                    "info": "No connection"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "/admin/addPasses": {
+        "post": {
+          "summary": "Προσθήκη γεγονότων διέλευσης από CSV αρχείο",
+          "requestBody": {
+            "content": {
+              "multipart/form-data": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          },
+          "responses": {
+            "200": {
+              "description": "Επιτυχής προσθήκη",
+              "content": {
+                "application/json": {
+                  "example": {
+                    "status": "OK"
+                  }
+                }
+              }
+            },
+            "400": {
+              "description": "Αποτυχία προσθήκης",
+              "content": {
+                "application/json": {
+                  "example": {
+                    "status": "failed",
+                    "info": "No connection"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "/tollStationPasses/{tollStationID}/{date_from}/{date_to}": {
+        "get": {
+          "summary": "Λίστα διελεύσεων ανά σταθμό",
+          "parameters": [
+            {
+              "name": "tollStationID",
+              "in": "path",
+              "required": true,
+              "schema": {
+                "type": "string"
+              }
+            },
+            {
+              "name": "date_from",
+              "in": "path",
+              "required": true,
+              "schema": {
+                "type": "string",
+                "example": "20220101"
+              }
+            },
+            {
+              "name": "date_to",
+              "in": "path",
+              "required": true,
+              "schema": {
+                "type": "string",
+                "example": "20220102"
+              }
+            }
+          ],
+          "responses": {
+            "200": {
+              "description": "Επιτυχής ανάλυση διελεύσεων",
+              "content": {
+                "application/json": {
+                  "example": {
+                    "stationID": "AM",
+                    "stationOperator": "OO",
+                    "requestTimestamp": "2025-02-10 10:00",
+                    "periodFrom": "20220101",
+                    "periodTo": "20220102",
+                    "nPasses": 50,
+                    "passList": [
+                      {
+                        "passIndex": 1,
+                        "timestamp": "2023-01-05",
+                        "tagID": "ΟΟΘ2",
+                        "tagProvider": "OO",
+                        "passType": "home",
+                        "passCharge": 1.5
+                      }
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "/passAnalysis/{stationOpID}/{tagOpID}/{date_from}/{date_to}": {
+        "get": {
+          "summary": "Ανάλυση διελεύσεων ανά operator",
+          "parameters": [
+            {
+              "name": "stationOpID",
+              "in": "path",
+              "required": true,
+              "schema": {
+                "type": "string"
+              }
+            },
+            {
+              "name": "tagOpID",
+              "in": "path",
+              "required": true,
+              "schema": {
+                "type": "string"
+              }
+            },
+            {
+              "name": "date_from",
+              "in": "path",
+              "required": true,
+              "schema": {
+                "type": "string",
+                "example": "20230101"
+              }
+            },
+            {
+              "name": "date_to",
+              "in": "path",
+              "required": true,
+              "schema": {
+                "type": "string",
+                "example": "20230131"
+              }
+            }
+          ],
+          "responses": {
+            "200": {
+              "description": "Επιτυχής ανάλυση διελεύσεων",
+              "content": {
+                "application/json": {
+                  "example": {
+                    "stationOpID": "AM",
+                    "tagOpID": "OO",
+                    "requestTimestamp": "2025-02-10 10:00",
+                    "periodFrom": "20230101",
+                    "periodTo": "20230131",
+                    "nPasses": 25,
+                    "passList": [
+                      {
+                        "passIndex": 1,
+                        "passID": "pass_1",
+                        "stationID": "AM",
+                        "timestamp": "2023-01-10",
+                        "tagID": "NAO5ZJA8DZ",
+                        "passCharge": 2.5
+                      }
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "/passesCost/{tollOpID}/{tagOpID}/{date_from}/{date_to}": {
+        "get": {
+          "summary": "Κόστος διελεύσεων ανά operator",
+          "parameters": [
+            {
+              "name": "tollOpID",
+              "in": "path",
+              "required": true,
+              "schema": {
+                "type": "string"
+              }
+            },
+            {
+              "name": "tagOpID",
+              "in": "path",
+              "required": true,
+              "schema": {
+                "type": "string"
+              }
+            },
+            {
+              "name": "date_from",
+              "in": "path",
+              "required": true,
+              "schema": {
+                "type": "string",
+                "example": "20230101"
+              }
+            },
+            {
+              "name": "date_to",
+              "in": "path",
+              "required": true,
+              "schema": {
+                "type": "string",
+                "example": "20230131"
+              }
+            }
+          ],
+          "responses": {
+            "200": {
+              "description": "Επιτυχής ανάλυση κόστους διελεύσεων",
+              "content": {
+                "application/json": {
+                  "example": {
+                    "tollOpID": "AM",
+                    "tagOpID": "OO",
+                    "requestTimestamp": "2025-02-10 10:00",
+                    "periodFrom": "20230101",
+                    "periodTo": "20230131",
+                    "nPasses": 25,
+                    "passesCost": 60.0
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "/chargesBy/{tollOpID}/{date_from}/{date_to}": {
+        "get": {
+          "summary": "Ανάλυση χρεώσεων από λοιπούς operators",
+          "parameters": [
+            {
+              "name": "tollOpID",
+              "in": "path",
+              "required": true,
+              "schema": {
+                "type": "string"
+              }
+            },
+            {
+              "name": "date_from",
+              "in": "path",
+              "required": true,
+              "schema": {
+                "type": "string",
+                "example": "20230101"
+              }
+            },
+            {
+              "name": "date_to",
+              "in": "path",
+              "required": true,
+              "schema": {
+                "type": "string",
+                "example": "20230131"
+              }
+            }
+          ],
+          "responses": {
+            "200": {
+              "description": "Επιτυχής ανάλυση χρεώσεων",
+              "content": {
+                "application/json": {
+                  "example": {
+                    "tollOpID": "AM",
+                    "requestTimestamp": "2025-02-10 10:00",
+                    "periodFrom": "20230101",
+                    "periodTo": "20230131",
+                    "vOpList": [
+                      {
+                        "visitingOpID": "OO",
+                        "nPasses": 10,
+                        "passesCost": 25.0
+                      }
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+  

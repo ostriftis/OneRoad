@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="icon" type="image/png" href="/logo.png">
+    <style>
+        /* Inline styles for the logout button */
+        .logout-button {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background-color: #f44336;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            cursor: pointer;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+
+        .logout-button:hover {
+            background-color: #d32f2f;
+        }
+    </style>
+</head>
+<body>
+    <!-- Logout Button (Top-Right Corner) -->
+    <button id="logout-btn" class="logout-button">Logout</button>
+
+    <div class="container">
+        <h1>Admin Dashboard</h1>
+        <div class="button-container">
+            <!-- Health Check Button -->
+            <button id="healthcheck-btn" class="btn" onclick="window.location.href='http://localhost:9115/api/admin/healthcheck'">
+                Health Check
+            </button>
+            
+            <!-- Reset Stations Button -->
+            <button id="resetstations-btn" class="btn">Reset Stations</button>
+            
+            <!-- Reset Passes Button -->
+            <button id="resetpasses-btn" class="btn">Reset Passes</button>
+
+        </div>
+        
+        <!-- Add Passes Form (with file upload) -->
+        <form id="upload-form" method="post" enctype="multipart/form-data">
+            <label for="file">Επιλέξτε αρχείο CSV:</label>
+            <input type="file" id="file" name="file" accept=".csv" required>
+            <button type="submit" class="btn">Add Passes</button>
+        </form>
+    </div>
+
+    <!-- Logout Script -->
+    <script>
+        // Handle Logout button click
+        document.getElementById('logout-btn').addEventListener('click', () => {
+            fetch('/api/logout', {
+                method: 'POST',
+            })
+            .then(response => {
+                if (response.ok) {
+                    // Redirect to login page after successful logout
+                    window.location.href = '/api/login';
+                } else {
+                    alert('Logout failed! Please try again.');
+                }
+            })
+            .catch(error => {
+                console.error("Error during logout:", error);
+                alert('Something went wrong. Try again.');
+            });
+        });
+
+        // Handle Reset stations button click
+        document.getElementById('resetstations-btn').addEventListener('click', () => {
+            fetch('/api/admin/resetstations', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'OK') {
+                    alert('Stations reset successfully!');
+                } else {
+                    alert(`Failed to reset stations: ${data.info}`);
+                }
+            })
+            .catch(error => {
+                console.error('Error during reset:', error);
+                alert('Something went wrong. Try again.');
+            });
+        });
+
+        // Handle Reset Passes button click
+        document.getElementById('resetpasses-btn').addEventListener('click', () => {
+            fetch('/api/admin/resetpasses', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'OK') {
+                    alert('Passes reset successfully!');
+                } else {
+                    alert(`Failed to reset passes: ${data.info}`);
+                }
+            })
+            .catch(error => {
+                console.error('Error during reset:', error);
+                alert('Something went wrong. Try again.');
+            });
+        });
+
+        // Handle Add Passes form submission
+        document.getElementById('upload-form').addEventListener('submit', (event) => {
+            event.preventDefault(); 
+
+            const formData = new FormData();
+            const fileInput = document.getElementById("file");
+            formData.append("file", fileInput.files[0]); 
+
+            fetch('/api/admin/addpasses', {
+                method: 'POST',
+                body: formData 
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'OK') {
+                    alert('File uploaded succesfully!');
+                } else {
+                    alert(`Failed to upload: ${data.info}`);
+                }
+            })
+            .catch(error => {
+                console.error('Error during upload:', error);
+                alert('Something went wrong. Try again.');
+            });
+        });
+    </script>
+</body>
+</html>

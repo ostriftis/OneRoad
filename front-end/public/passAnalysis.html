@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pass Analysis</title>
+    <link rel="stylesheet" href="/css/styles.css">
+    <link rel="icon" type="image/png" href="/logo.png">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        /* Add page-specific styling */
+        .data-page-container {
+            padding-top: 80vh; /* Minimum 140px or 15% of viewport height */
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            min-height: calc(100vh - 160px);
+            overflow-y: auto;
+        }
+    </style>
+</head>
+<body>
+    <!-- Main container -->
+    <div class="wrapper">
+        <!-- Placeholder for the Top Bar -->
+        <div id="banner-container"></div>
+
+        <!-- Content -->
+        <div class="data-page-container">
+            <h2 class="section-header">Pass Analysis</h2>
+            
+            <form id="passAnalysisForm">
+                <input type="hidden" id="formatInput" name="format" value="">
+                <!-- Toll Station ID Section -->
+                <div class="toll-id-container">
+                    <label for="toll-id">Station Operator ID:</label>
+                    <input type="text" id="toll-id" name="tollId" required>
+                    <input type="hidden" name="type" value="passAnalysis">
+                </div>
+                <div class="toll-id-container">
+                    <label for="tagOpID">Tag Operator ID:</label>
+                    <input type="text" id="tagOpID" name="tagOpID" required>
+                </div>                
+        
+                <!-- Time Period Section -->
+                <div class="time-period-container">
+                    <label for="start-time">Starting Time period:</label>
+                    <input type="date" id="start-time" name="start" required>
+            
+                    <label for="end-time">Ending Time period:</label>
+                    <input type="date" id="end-time" name="end" required>
+                </div>
+        
+                <!-- Action Buttons -->
+                <div class="button-container">
+                    <button type="submit" class="raw-data-button" onclick="setFormat('json')">View Graph</button>
+                    <button type="submit"  class="diagram-data-button" onclick="setFormat('csv')">Download CSV</button>
+                </div>    
+            </form>
+
+            <!-- Stats Display Section -->
+            <div class="stats-display" style="display: none;">
+                <div class="stats-container">
+                    <!-- Stats content -->
+                </div>
+            </div>
+
+            <!-- Chart Container -->
+            <div class="chart-container">
+                <canvas id="dataChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script>
+        function setFormat(format) {
+            document.getElementById('formatInput').value = format;
+        }
+
+        const username = new URLSearchParams(window.location.search).get("username");
+        
+        function appendUsername(url) {
+            return `${url}?username=${encodeURIComponent(username)}`;
+        }
+
+        // Set date limits
+        const today = new Date().toISOString().split('T')[0];
+        document.getElementById('start-time').setAttribute('max', today);
+        document.getElementById('end-time').setAttribute('max', today);
+
+        // Load banner and handle form submission
+        fetch('/banner.html')
+            .then(response => response.ok ? response.text() : Promise.reject('Failed to load banner.html'))
+            .then(html => {
+                document.getElementById('banner-container').innerHTML = html;
+
+                document.getElementById('logo-link').href = appendUsername('/api/dashboard');
+                document.getElementById('home-link').href = appendUsername('/api/dashboard');
+                document.getElementById('debts-link').href = appendUsername('/api/debts');
+                document.getElementById('stats-link').href = appendUsername('/api/stats');
+
+                document.getElementById('logout').addEventListener('click', () => {
+                    fetch('/api/logout', { method: 'POST' })
+                        .then(res => res.ok ? window.location.href = '/api/login' : alert('Logout failed!'))
+                        .catch(err => console.error('Logout error:', err));
+                });
+            })
+            .catch(error => console.error('Error loading banner:', error));
+
+        // Form submission handler
+        document.getElementById('passAnalysisForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const format = document.getElementById('formatInput').value;
+            const tollId = document.getElementById('toll-id').value;
+            const tagOpID = document.getElementById('tagOpID').value;
+            const start = document.getElementById('start-time').value;
+            const end = document.getElementById('end-time').value;
+
+            // Format dates as YYYYMMDD
+            const formatDate = (date) => date.replace(/-/g, '');
+            
+            try {
+                const response = await fetch(`/api/passAnalysis/${tollId}/${tagOpID}/${formatDate(start)}/${formatDate(end)}?format=${format}`);
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                if (format === 'csv') {
+                    const blob = await response.blob();
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = 'passAnalysis.csv';
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    window.URL.revokeObjectURL(url);
+                } else {
+                    const data = await response.json();
+                    createChart(data);
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert(`Failed to fetch data: ${error.message}`);
+            }
+        });
+
+        // Chart creation function
+        function createChart(data) {
+            const existingChart = Chart.getChart("dataChart");
+            if (existingChart) {
+                existingChart.destroy();
+            }
+            const ctx = document.getElementById('dataChart');
+            
+            // Process data from passList array
+            const monthCounts = data.passList.reduce((acc, pass) => {
+                const date = new Date(pass.timestamp);
+                const month = date.toLocaleString('default', { month: 'long', year: 'numeric' });
+                acc[month] = (acc[month] || 0) + 1;
+                return acc;
+            }, {});
+
+            new Chart(ctx, {
+                type: 'pie',
+                data: {
+                    labels: Object.keys(monthCounts),
+                    datasets: [{
+                        data: Object.values(monthCounts),
+                        backgroundColor: [
+                            'rgba(255, 99, 132, 0.8)',
+                            'rgba(54, 162, 235, 0.8)',
+                            'rgba(255, 206, 86, 0.8)',
+                            'rgba(75, 192, 192, 0.8)',
+                            'rgba(153, 102, 255, 0.8)',
+                            'rgba(255, 159, 64, 0.8)',
+                            'rgba(199, 199, 199, 0.8)',
+                            'rgba(83, 102, 255, 0.8)',
+                            'rgba(255, 99, 132, 0.8)',
+                            'rgba(54, 162, 235, 0.8)',
+                            'rgba(255, 206, 86, 0.8)',
+                            'rgba(75, 192, 192, 0.8)'
+                        ]
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: 'Pass Analysis Distribution by Month'
+                        }
+                    }
+                }
+            });
+        }
+    </script>
+</body>
+</html>

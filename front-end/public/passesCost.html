@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Passes Cost</title>
+    <link rel="stylesheet" href="/css/styles.css">
+    <link rel="icon" type="image/png" href="/logo.png">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        .data-page-container {
+            padding-top: 80vh; /* Minimum 140px or 15% of viewport height */
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            min-height: calc(100vh - 160px);
+            overflow-y: auto;
+        }
+    </style>
+</head>
+<body>
+    <!-- Main container -->
+    <div class="wrapper">
+        <!-- Placeholder for the Top Bar -->
+        <div id="banner-container"></div>
+
+        <!-- Content -->
+        <div class="data-page-container">
+            <h2 class="section-header">Passes Cost</h2>
+            
+            <form id="passesCostForm">
+                <input type="hidden" id="formatInput" name="format" value="">
+                <!-- Toll Station ID Section -->
+                <div class="toll-id-container">
+                    <label for="toll-id">Toll Operator ID:</label>
+                    <input type="text" id="toll-id" name="tollId" required>
+                    <input type="hidden" name="type" value="passesCost">
+                </div>
+                <div class="toll-id-container">
+                    <label for="tagOpID">Tag Operator ID:</label>
+                    <input type="text" id="tagOpID" name="tagOpID" required>
+                </div>   
+        
+                <!-- Time Period Section -->
+                <div class="time-period-container">
+                    <label for="start-time">Starting Time period:</label>
+                    <input type="date" id="start-time" name="start" required>
+            
+                    <label for="end-time">Ending Time period:</label>
+                    <input type="date" id="end-time" name="end" required>
+                </div>
+        
+                <!-- Action Buttons -->
+                <div class="button-container">
+                    <button type="submit" class="raw-data-button" onclick="setFormat('json')">View Graph</button>
+                    <button type="submit" class="diagram-data-button" onclick="setFormat('csv')">Download CSV</button>
+                </div>
+            </form>
+
+            <div class="stats-display" style="display: none; margin-top: 20px; text-align: center;">
+                <div class="stats-box" style="background: #f5f5f5; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); max-width: 800px; margin: 0 auto;">
+                    <div style="display: flex; justify-content: center; gap: 40px; align-items: center; font-size: 20px;">
+                        <div style="display: flex; align-items: center; gap: 10px;">
+                            <strong>Number of Passes:</strong>
+                            <span id="nPasses" style="font-weight: bold;">-</span>
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 10px;">
+                            <strong>Total Cost:</strong>
+                            <span id="passesCost" style="font-weight: bold;">-</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Chart Container -->
+            <div class="chart-container">
+                <canvas id="dataChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script>
+        function setFormat(format) {
+            document.getElementById('formatInput').value = format;
+        }
+
+        const username = new URLSearchParams(window.location.search).get("username");
+        
+        function appendUsername(url) {
+            return `${url}?username=${encodeURIComponent(username)}`;
+        }
+
+        // Set date limits
+        const today = new Date().toISOString().split('T')[0];
+        document.getElementById('start-time').setAttribute('max', today);
+        document.getElementById('end-time').setAttribute('max', today);
+
+        // Load banner and handle form submission
+        fetch('/banner.html')
+            .then(response => response.ok ? response.text() : Promise.reject('Failed to load banner.html'))
+            .then(html => {
+                document.getElementById('banner-container').innerHTML = html;
+
+                document.getElementById('logo-link').href = appendUsername('/api/dashboard');
+                document.getElementById('home-link').href = appendUsername('/api/dashboard');
+                document.getElementById('debts-link').href = appendUsername('/api/debts');
+                document.getElementById('stats-link').href = appendUsername('/api/stats');
+
+                document.getElementById('logout').addEventListener('click', () => {
+                    fetch('/api/logout', { method: 'POST' })
+                        .then(res => res.ok ? window.location.href = '/api/login' : alert('Logout failed!'))
+                        .catch(err => console.error('Logout error:', err));
+                });
+            })
+            .catch(error => console.error('Error loading banner:', error));
+
+        // Handle form submission
+        document.getElementById('passesCostForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const format = document.getElementById('formatInput').value;
+            const tollId = document.getElementById('toll-id').value;
+            const tagOpID = document.getElementById('tagOpID').value;
+            const start = document.getElementById('start-time').value;
+            const end = document.getElementById('end-time').value;
+
+            // Format dates as YYYYMMDD
+            const formatDate = (date) => date.replace(/-/g, '');
+
+            try {
+                if (format === 'json') {
+                    const response = await fetch(`/api/passesCost/${tollId}/${tagOpID}/${formatDate(start)}/${formatDate(end)}?format=json`);
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    const data = await response.json();
+                    
+                    // Display the statistics
+                    document.querySelector('.stats-display').style.display = 'block';
+                    document.getElementById('nPasses').textContent = data.nPasses;
+                    document.getElementById('passesCost').textContent = `€${data.passesCost.toFixed(2)}`;
+
+                    // Create chart
+                    createChart(data);
+                } else if (format === 'csv') {
+                    const response = await fetch(`/api/passesCost/${tollId}/${tagOpID}/${formatDate(start)}/${formatDate(end)}?format=csv`);
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    const blob = await response.blob();
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = 'passesCost.csv';
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Failed to fetch data. Please try again.');
+            }
+        });
+
+        // Chart creation function
+        function createChart(data) {
+            const ctx = document.getElementById('dataChart').getContext('2d');
+            new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: ['Number of Passes', 'Total Cost'],
+                    datasets: [{
+                        label: 'Passes Data',
+                        data: [data.nPasses, data.passesCost],
+                        backgroundColor: ['#36A2EB', '#FF6384'],
+                        borderColor: ['#36A2EB', '#FF6384'],
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
+        }
+    </script>
+</body>
+</html>

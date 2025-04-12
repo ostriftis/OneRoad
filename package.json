@@ -1,0 +1,38 @@
+{
+  "name": "prototype",
+  "version": "1.0.0",
+  "private": true,
+  "main": "app.js",
+  "description": "",
+  "keywords": [],
+  "author": "",
+  "license": "GPL",
+  "dependencies": {
+    "bcrypt": "^5.1.1",
+    "bcryptjs": "^2.4.3",
+    "commander": "^12.1.0",
+    "cookie-parser": "^1.4.7",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2",
+    "json2csv": "^6.0.0-alpha.2",
+    "jsonwebtoken": "^9.0.2",
+    "multer": "^1.4.5-lts.1",
+    "mysql": "^2.18.1",
+    "mysql2": "^3.11.5",
+    "path": "^0.12.7",
+    "serve-favicon": "^2.5.0",
+    "uuid": "^11.0.3"
+  },
+  "bin": {
+    "se2415": "./cli-client/cli.js"
+  },
+  "scripts": {
+    "reset-uploads": "rimraf uploads && mkdir uploads",
+    "start": "npm run reset-uploads && nodemon run app.js",
+    "dbSync": "node ./db/dbSync.js"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.9"
+  }
+}

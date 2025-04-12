@@ -1,0 +1,44 @@
+<div class="top-bar">
+    <a href="#" id="logo-link">
+        <img src="/logo.png" alt="Logo" class="logo">
+    </a>
+    <nav class="nav-links">
+        <a href="#" id="home-link" class="nav-link">Home</a>
+        <a href="/api/debts" id="debts-link" class="nav-link">Debts</a>
+        <a href="/api/stats" id="stats-link" class="nav-link">Statistics</a>
+    </nav>
+    <button class="logout-button" id="logout">Logout</button>
+</div>
+<script>
+    document.addEventListener("DOMContentLoaded", () => {
+        // Function to preserve the 'username' in links
+        function appendUsername(url) {
+            const params = new URLSearchParams(window.location.search);
+            const username = params.get('username');
+            return username ? `${url}?username=${encodeURIComponent(username)}` : url;
+        }
+
+        // Update links dynamically to preserve the query parameter
+        document.getElementById('logo-link').href = appendUsername('/api/dashboard');
+        document.getElementById('home-link').href = appendUsername('/api/dashboard');
+        document.getElementById('debts-link').href = appendUsername('/api/debts');
+        document.getElementById('stats-link').href = appendUsername('/api/stats');
+
+        // Logout functionality
+        document.getElementById('logout').addEventListener('click', () => {
+            fetch('/api/logout', { method: 'POST' })
+                .then(response => {
+                    if (response.ok) {
+                        // Redirect to the login page or home page after logout
+                        window.location.href = '/api/login';
+                    } else {
+                        alert('Logout failed! Please try again.');
+                    }
+                })
+                .catch(error => {
+                    console.error("Error during logout:", error);
+                    alert('Something went wrong. Try again.');
+                });
+        });
+    });
+</script>

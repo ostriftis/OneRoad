@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Toll Station Passes</title>
+    <link rel="stylesheet" href="/css/styles.css">
+    <link rel="icon" type="image/png" href="/logo.png" />
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        .data-page-container {
+            padding-top: 80vh; /* Minimum 140px or 15% of viewport height */
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            overflow-y: auto;
+        }
+
+        .form-container {
+            margin-bottom: 10px;
+            flex: 0 0 auto;
+            width: 95%;  
+            max-width: 760px;
+            margin: 0 auto;
+        }
+
+        .chart-container {
+            width: 95%; 
+            max-width: 760px; 
+            height: auto;
+            margin: 20px auto;
+            flex: 0 0 auto;
+            position: relative;
+            aspect-ratio: 1;
+            overflow: hidden;
+        }
+
+        .chart-container canvas {
+            max-width: 100%;
+            height: auto !important;
+        }
+
+        .toll-id-container {
+            margin: 30px 0 30px 0; 
+        }
+
+        .time-period-container {
+            margin-bottom: 25px;
+            display: flex;
+            flex-direction: column;
+            width: 100%;
+        }
+
+        .time-period-container label {
+            margin-top: 10px;
+            margin-bottom: 5px;
+        }
+
+        input[type="text"], 
+        input[type="date"] {
+            width: 100%;
+            padding: 10px;
+            margin: 5px 0;
+            box-sizing: border-box;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+
+        .button-container {
+            display: flex;
+            gap: 15px;
+            margin-top: 25px;
+            justify-content: center; /* Center the buttons */
+            width: 100%;
+        }
+
+        .raw-data-button,
+.diagram-data-button {
+    flex: 0 1 200px; /* Fixed width buttons with some flexibility */
+    padding: 12px 24px;
+    cursor: pointer;
+    border-radius: 4px;
+    border: 1px solid #ddd;
+    max-width: 45%; /* Prevent buttons from getting too wide */
+}
+
+
+        #banner-container {
+            position: fixed;
+            top: 0;
+            width: 100%;
+            z-index: 1000;
+            background: #f8f9fa;
+            padding: 15px 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            display: flex;
+            justify-content: center; /* Center the content */
+            align-items: center;
+        }
+
+                .nav-links {
+            position: absolute;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+        }
+
+        /* Update the logout button styles */
+        #logout {
+            position: absolute;
+            right: 20px;
+            padding: 8px 16px;
+            min-width: 100px; /* Set a minimum width */
+            width: auto; /* Allow button to size based on content */
+        }
+    </style>
+</head>
+<body>
+    <div class="wrapper">
+        <div id="banner-container"></div>
+
+        <div class="data-page-container">
+            <h2 class="section-header">Toll Station Passes</h2>
+            
+            <form id="tollStationPassesForm">
+                <input type="hidden" id="formatInput" name="format" value="">
+                <div class="toll-id-container">
+                    <label for="toll-id">Toll Station ID:</label>
+                    <input type="text" id="toll-id" name="tollId" required>
+                    <input type="hidden" name="type" value="tollStationPasses">
+                </div>
+
+                <div class="time-period-container">
+                    <label for="start-time">Starting Time period:</label>
+                    <input type="date" id="start-time" name="start" required>
+                    
+                    <label for="end-time">Ending Time period:</label>
+                    <input type="date" id="end-time" name="end" required>
+                </div>
+
+                <div class="button-container">
+                    <button type="submit" class="diagram-data-button" onclick="setFormat('json')">View Graph</button>
+                    <button type="submit" class="raw-data-button" onclick="setFormat('csv')">Download CSV</button>
+                </div>
+            </form>
+
+            <div class="stats-display" style="display: none;">
+                <div class="stats-container">
+                    <!-- Stats content -->
+                </div>
+            </div>
+
+            <div class="chart-container">
+                <canvas id="dataChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+ <!-- Scripts -->
+    <script>
+        // Set the format value before submitting the form
+        function setFormat(format) {
+            document.getElementById('formatInput').value = format;
+        }
+
+        // Get today's date in YYYY-MM-DD format and set 'max' attributes
+        const today = new Date().toISOString().split('T')[0];
+        document.getElementById('start-time').setAttribute('max', today);
+        document.getElementById('end-time').setAttribute('max', today);
+
+        // Extract 'username' from the query parameters
+        const params = new URLSearchParams(window.location.search);
+        const username = params.get('username') || 'Guest';
+        // Preserve the username in the banner links
+        function appendUsername(url) {
+            return `${url}?username=${encodeURIComponent(username)}`;
+        }
+
+        // Dynamically load the banner.html file
+        fetch('/banner.html')
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Failed to load banner.html');
+                }
+                return response.text();
+            })
+            .then(html => {
+                document.getElementById('banner-container').innerHTML = html;
+
+                document.getElementById('logo-link').href = appendUsername('/api/dashboard');
+                document.getElementById('home-link').href = appendUsername('/api/dashboard');
+                document.getElementById('debts-link').href = appendUsername('/api/debts');
+                document.getElementById('stats-link').href = appendUsername('/api/stats');
+
+                document.getElementById('logout').addEventListener('click', () => {
+                    fetch('/api/logout', { method: 'POST' })
+                        .then(response => {
+                            if (response.ok) {
+                                window.location.href = '/api/login';
+                            } else {
+                                alert('Logout failed! Please try again.');
+                            }
+                        })
+                        .catch(error => {
+                            console.error("Error during logout:", error);
+                            alert('Something went wrong. Try again.');
+                        });
+                });
+            })
+            .catch(error => console.error('Error loading banner:', error));
+
+        // Function to create the pie chart
+        function createPieChart(data) {
+            // Destroy existing chart if it exists
+            const existingChart = Chart.getChart("dataChart"); // Changed from passesChart to dataChart
+            if (existingChart) {
+                existingChart.destroy();
+            }
+            const ctx = document.getElementById('dataChart'); // Changed from passesChart to dataChart
+            
+            // Group passes by tagProvider instead of passType
+            const operatorCounts = data.passList.reduce((acc, pass) => {
+                const operatorId = pass.tagProvider || 'Unknown';
+                acc[operatorId] = (acc[operatorId] || 0) + 1;
+                return acc;
+            }, {});
+
+            // Generate colors dynamically based on number of operators
+            const generateColors = (count) => {
+                const colors = [];
+                for (let i = 0; i < count; i++) {
+                    const hue = (i * 360) / count;
+                    colors.push(`hsla(${hue}, 70%, 60%, 0.8)`);
+                }
+                return colors;
+            };
+
+            new Chart(ctx, {
+                type: 'pie',
+                data: {
+                    labels: Object.keys(operatorCounts),
+                    datasets: [{
+                        data: Object.values(operatorCounts),
+                        backgroundColor: generateColors(Object.keys(operatorCounts).length)
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: `Pass Distribution by Tag Operator for Station ${data.stationID}`
+                        }
+                    }
+                }
+            });
+        }
+
+        // Modify form submission to handle the response
+       // Modify form submission handler
+        document.getElementById('tollStationPassesForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const format = document.getElementById('formatInput').value;
+            const tollId = document.getElementById('toll-id').value;
+            const start = document.getElementById('start-time').value;
+            const end = document.getElementById('end-time').value;
+
+            // Format dates as YYYYMMDD
+            const formatDate = (date) => date.replace(/-/g, '');
+            
+            try {
+                const response = await fetch(`/api/tollStationPasses/${tollId}/${formatDate(start)}/${formatDate(end)}?format=${format}`);
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                if (format === 'csv') {
+                    const blob = await response.blob();
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = 'tollStationPasses.csv';
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    window.URL.revokeObjectURL(url);
+                } else {
+                    // Handle JSON data by creating the pie chart
+                    const data = await response.json();
+                    createPieChart(data);
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert(`Failed to fetch data: ${error.message}`);
+            }
+        });
+    </script>
+</body>
+</html>
