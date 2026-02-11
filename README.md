@@ -46,7 +46,6 @@ The solution is composed of three primary interfaces, all powered by a unified b
 The core of the system. It exposes endpoints for data management and calculations.
 * **Tech:** Node.js / Express
 * **Capabilities:** JSON & CSV export, custom date-filtering, and robust error handling.
-* **Documentation:** Fully documented using OpenAPI 3.0.
 
 ### **2. Command Line Interface (CLI)**
 A functional administrative tool mirroring the API's capabilities for headless environments.
